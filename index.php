@@ -11,7 +11,6 @@ if(isset($_SESSION['user_id'])){
 };
 
 include 'components/wishlist_cart.php';
-
 ?>
 
 <!DOCTYPE html>
