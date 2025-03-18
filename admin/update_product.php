@@ -21,11 +21,9 @@ if(isset($_POST['update'])){
    $stock = filter_var($stock, FILTER_SANITIZE_STRING);
    $details = $_POST['details'];
    $details = filter_var($details, FILTER_SANITIZE_STRING);
-   $category = $_POST['category'];
-   $category = filter_var($category, FILTER_SANITIZE_STRING);
 
-   $update_product = $conn->prepare("UPDATE `products` SET name = ?, price = ?, stock = ?, details = ?, category = ? WHERE id = ?");
-   $update_product->execute([$name, $price, $stock, $details, $category , $pid]);
+   $update_product = $conn->prepare("UPDATE `products` SET name = ?, price = ?, stock = ?, details = ? WHERE id = ?");
+   $update_product->execute([$name, $price, $stock, $details, $pid]);
 
    $message[] = 'product updated successfully!';
 
@@ -140,32 +138,6 @@ if(isset($_POST['update'])){
       <input type="number" name="price" required class="box" min="0" max="9999999999" placeholder="enter product price" onkeypress="if(this.value.length == 10) return false;" value="<?= $fetch_products['price']; ?>">
       <span>update stock</span>
       <input type="number" name="stock" required class="box" min="0" max="9999999999" placeholder="enter product stock" onkeypress="if(this.value.length == 10) return false;" value="<?= $fetch_products['stock']; ?>">
-      <div class="inputBox">
-   <span>Product Category <span style="color:red">*</span></span>
-   <select name="category" style="font-size: 18px; width: 100%; height: 50px; background-color: #f2f2f2;" required>
-      <option selected>Hardware</option>
-      <option>Wires</option>
-      <option>Glass</option>
-      <option>Kitchen hardware</option>
-      <option>Locks</option>
-      <option>Glass</option>
-      <option>Wood products</option>
-      <option>Curtain hardware</option>
-      <option>Electrical</option>
-      <option>Hooks</option>
-      <option>Keys</option>
-      <option>Nails and screws</option>
-      <option>Fasteners</option>
-      <option>Hand tools</option>
-      <option>Cabinet hardware</option>
-      <option>Door hardware</option>
-      <option>Paints</option>
-      <option>Aluminum hardware</option>
-      <option>Steel Bar</option>
-      <option>Roofing</option>
-   </select>
-</div>
-
       <span>update details</span>
       <textarea name="details" class="box" required cols="30" rows="10"><?= $fetch_products['details']; ?></textarea>
       <span>update image 01</span>

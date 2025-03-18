@@ -256,7 +256,7 @@ tr {
    <select name="category" style="font-size: 18px; width: 100%; height: 50px; background-color: #f2f2f2;" required>
       <option selected>Hardware</option>
       <option>Wires</option>
-      <option>Glass</option>
+      <option>Fittings</option>
       <option>Kitchen hardware</option>
       <option>Locks</option>
       <option>Plumbing</option>
@@ -272,8 +272,8 @@ tr {
       <option>Door hardware</option>
       <option>Paints</option>
       <option>Aluminum hardware</option>
-      <option>Steel Bar</option>
-      <option>Roofing</option>
+      <option>Architectural hardware</option>
+      <option>Chains</option>
    </select>
 </div>
 
