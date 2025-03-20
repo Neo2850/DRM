@@ -1,5 +1,161 @@
+<script setup>
+import { ref, onMounted, onBeforeUnmount } from "vue";
+import { Link, router } from "@inertiajs/vue3";
+import {
+  ShoppingCartIcon,
+  StarIcon,
+  HeartIcon,
+  PackageIcon,
+  TruckIcon,
+  HeadphonesIcon,
+  ShieldIcon,
+  ChevronLeft,
+  ChevronRight,
+  MessageCircle,
+} from "lucide-vue-next";
+import NavLink from "../../Components/NavLink.vue";
+import { route } from "../../../../vendor/tightenco/ziggy/src/js";
+import Footer from "../../Components/Footer.vue";
+import AddToCartModal from "../../Components/AddToCartModal.vue";
+import PowerDrill from "@/images/powerDrill.png";
+import RoofSheets from "@/images/roofSheets.png";
+import HydraulicHinges from "@/images/hydraulicHinges.png";
+
+const props = defineProps({
+  exploreProducts: Object,
+  latestProducts: Object,
+  products: Object,
+  categories: Object,
+});
+
+const currentSlide = ref(0);
+const visibleCards = ref(5);
+
+// State for Categories Section
+const currentCategorySlide = ref(0);
+const visibleCategoryCards = ref(5);
+
+// Update visible cards based on screen size
+const updateVisibleCards = () => {
+  if (window.innerWidth < 840) {
+    visibleCards.value = 2;
+    visibleCategoryCards.value = 2;
+  } else if (window.innerWidth < 1024) {
+    visibleCards.value = 3;
+    visibleCategoryCards.value = 3;
+  } else if (window.innerWidth < 1280) {
+    visibleCards.value = 4;
+    visibleCategoryCards.value = 4;
+  } else {
+    visibleCards.value = 5;
+    visibleCategoryCards.value = 5;
+  }
+};
+
+// Scroll functionality for Latest Products Section
+const prevSlide = () => {
+  currentSlide.value = Math.max(currentSlide.value - 1, 0);
+};
+const nextSlide = () => {
+  currentSlide.value = Math.min(
+    currentSlide.value + 1,
+    props.latestProducts.length - visibleCards.value
+  );
+};
+
+// Scroll functionality for Categories Section
+const prevCategorySlide = () => {
+  currentCategorySlide.value = Math.max(currentCategorySlide.value - 1, 0);
+};
+const nextCategorySlide = () => {
+  currentCategorySlide.value = Math.min(
+    currentCategorySlide.value + 1,
+    props.categories.length - visibleCategoryCards.value
+  );
+};
+
+// Add event listener for window resize
+onMounted(() => {
+  updateVisibleCards();
+  window.addEventListener("resize", updateVisibleCards);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("resize", updateVisibleCards);
+});
+// Sample categories (replace with your dynamic data)
+
+// Reviews Data
+const reviews = [
+  {
+    id: 1,
+    name: "Martin Goutry",
+    title: "Back-end developer at MyOnline",
+    content:
+      "Dico is finally addressing a long-time problem we had when building UIs. It's ease of use and workflow seems really intuitive. Promising!",
+    date: "Dico user, 2023.03.02",
+    avatar: "",
+  },
+  {
+    id: 2,
+    name: "Theo Champion",
+    title: "Back-end developer at MyOnline",
+    content:
+      "Dico is finally addressing a long-time problem we had when building UIs. It's ease of use and workflow seems really intuitive. Promising!",
+    date: "Dico user, 2023.03.02",
+    avatar: "",
+  },
+  {
+    id: 3,
+    name: "Agnes Remi",
+    title: "Back-end developer at MyOnline",
+    content:
+      "Dico is finally addressing a long-time problem we had when building UIs. It's ease of use and workflow seems really intuitive. Promising!",
+    date: "Dico user, 2023.03.02",
+    avatar: "",
+  },
+];
+
+const showSuccessModal = ref(false);
+const addedProduct = ref(null);
+
+const addToCart = (product) => {
+  router.post(
+    route("cart.add"),
+    {
+      product_id: product.id,
+      name: product.name,
+      price: product.price,
+      quantity: 1,
+      image: product.image ? "/storage/" + product.image : "/storage/default.jpg",
+    },
+    {
+      preserveScroll: true,
+      onSuccess: () => {
+        addedProduct.value = {
+          name: product.name,
+          price: product.price,
+          quantity: 1,
+          image: product.image ? "/storage/" + product.image : "/storage/default.jpg",
+        };
+        showSuccessModal.value = true;
+      },
+    }
+  );
+};
+
+// Add these new refs
+const showMessengerTooltip = ref(false);
+const unreadMessages = ref(0); // You can set this based on your backend data
+
+// Add this new method
+const openMessenger = () => {
+  window.open("https://www.facebook.com/ArtzworkPc", "_blank");
+};
+</script>
+
 <template>
-  <div class="min-h-screen bg-white">
+  <div class="min-h-screen bg-gray-200">
     <!-- Header/Navigation -->
     <NavLink />
     <!-- Hero Section -->
@@ -24,8 +180,8 @@
               class="bg-white rounded-lg p-4 shadow-lg flex justify-center items-center"
             >
               <img
-                src="../ClientSide/assets/Image.png"
-                alt="Xbox Console"
+                :src="PowerDrill"
+                alt="Power Drill"
                 class="w-full max-w-[250px] object-contain"
               />
             </div>
@@ -35,28 +191,29 @@
               <!-- Summer Sales -->
               <div class="bg-white rounded-lg p-4 shadow-lg relative">
                 <div
-                  class="absolute top-2 left-2 bg-yellow-100 text-yellow-800 text-xs font-medium px-2 py-1 rounded"
+                  class="absolute z-10 top-2 left-2 bg-yellow-100 text-yellow-800 text-xs font-medium px-2 py-1 rounded"
                 >
                   SUMMER SALES
                 </div>
-                <img
-                  src="../ClientSide/assets/Widget.png"
-                  alt="Iphone 15 Series"
-                  class="w-full object-cover rounded-lg"
+                <div class="w-full h-36 overflow-hidden">
+                  <img
+                  :src="RoofSheets"
+                  alt="Roofing Sheets"
+                  class="relative -top-10 " 
                 />
-                <h3 class="font-semibold mt-2">Iphone 15 Series</h3>
+                </div>
+                <h3 class="font-semibold mt-2">Metal Barrel Roof Tiles</h3>
                 <div class="text-lg font-bold text-green-600">29% OFF</div>
               </div>
 
               <!-- Play Station 5 -->
               <div class="bg-white rounded-lg p-4 shadow-lg">
                 <img
-                  src="../ClientSide/assets/ps53.png"
-                  alt="Play Station 5"
+                  :src="HydraulicHinges"
+                  alt="Hydraulic Hinges"
                   class="w-full max-w-[150px] mx-auto mb-2"
                 />
-                <h3 class="font-semibold mb-2 text-center">Play Station 5</h3>
-                <p class="text-sm text-gray-600 text-center">Digital Edition + 2TB</p>
+                <h3 class="font-semibold mb-2 text-center">Hydraulic Hinges</h3>
               </div>
             </div>
           </div>
@@ -460,159 +617,6 @@
     </div>
   </div>
 </template>
-
-<script setup>
-import { ref, onMounted, onBeforeUnmount } from "vue";
-import { Link, router } from "@inertiajs/vue3";
-import {
-  ShoppingCartIcon,
-  StarIcon,
-  HeartIcon,
-  PackageIcon,
-  TruckIcon,
-  HeadphonesIcon,
-  ShieldIcon,
-  ChevronLeft,
-  ChevronRight,
-  MessageCircle,
-} from "lucide-vue-next";
-import NavLink from "../../Components/NavLink.vue";
-import { route } from "../../../../vendor/tightenco/ziggy/src/js";
-import Footer from "../../Components/Footer.vue";
-import AddToCartModal from "../../Components/AddToCartModal.vue";
-
-const props = defineProps({
-  exploreProducts: Object,
-  latestProducts: Object,
-  products: Object,
-  categories: Object,
-});
-
-const currentSlide = ref(0);
-const visibleCards = ref(5);
-
-// State for Categories Section
-const currentCategorySlide = ref(0);
-const visibleCategoryCards = ref(5);
-
-// Update visible cards based on screen size
-const updateVisibleCards = () => {
-  if (window.innerWidth < 840) {
-    visibleCards.value = 2;
-    visibleCategoryCards.value = 2;
-  } else if (window.innerWidth < 1024) {
-    visibleCards.value = 3;
-    visibleCategoryCards.value = 3;
-  } else if (window.innerWidth < 1280) {
-    visibleCards.value = 4;
-    visibleCategoryCards.value = 4;
-  } else {
-    visibleCards.value = 5;
-    visibleCategoryCards.value = 5;
-  }
-};
-
-// Scroll functionality for Latest Products Section
-const prevSlide = () => {
-  currentSlide.value = Math.max(currentSlide.value - 1, 0);
-};
-const nextSlide = () => {
-  currentSlide.value = Math.min(
-    currentSlide.value + 1,
-    props.latestProducts.length - visibleCards.value
-  );
-};
-
-// Scroll functionality for Categories Section
-const prevCategorySlide = () => {
-  currentCategorySlide.value = Math.max(currentCategorySlide.value - 1, 0);
-};
-const nextCategorySlide = () => {
-  currentCategorySlide.value = Math.min(
-    currentCategorySlide.value + 1,
-    props.categories.length - visibleCategoryCards.value
-  );
-};
-
-// Add event listener for window resize
-onMounted(() => {
-  updateVisibleCards();
-  window.addEventListener("resize", updateVisibleCards);
-});
-
-onBeforeUnmount(() => {
-  window.removeEventListener("resize", updateVisibleCards);
-});
-// Sample categories (replace with your dynamic data)
-
-// Reviews Data
-const reviews = [
-  {
-    id: 1,
-    name: "Martin Goutry",
-    title: "Back-end developer at MyOnline",
-    content:
-      "Dico is finally addressing a long-time problem we had when building UIs. It's ease of use and workflow seems really intuitive. Promising!",
-    date: "Dico user, 2023.03.02",
-    avatar: "",
-  },
-  {
-    id: 2,
-    name: "Theo Champion",
-    title: "Back-end developer at MyOnline",
-    content:
-      "Dico is finally addressing a long-time problem we had when building UIs. It's ease of use and workflow seems really intuitive. Promising!",
-    date: "Dico user, 2023.03.02",
-    avatar: "",
-  },
-  {
-    id: 3,
-    name: "Agnes Remi",
-    title: "Back-end developer at MyOnline",
-    content:
-      "Dico is finally addressing a long-time problem we had when building UIs. It's ease of use and workflow seems really intuitive. Promising!",
-    date: "Dico user, 2023.03.02",
-    avatar: "",
-  },
-];
-
-const showSuccessModal = ref(false);
-const addedProduct = ref(null);
-
-const addToCart = (product) => {
-  router.post(
-    route("cart.add"),
-    {
-      product_id: product.id,
-      name: product.name,
-      price: product.price,
-      quantity: 1,
-      image: product.image ? "/storage/" + product.image : "/storage/default.jpg",
-    },
-    {
-      preserveScroll: true,
-      onSuccess: () => {
-        addedProduct.value = {
-          name: product.name,
-          price: product.price,
-          quantity: 1,
-          image: product.image ? "/storage/" + product.image : "/storage/default.jpg",
-        };
-        showSuccessModal.value = true;
-      },
-    }
-  );
-};
-
-// Add these new refs
-const showMessengerTooltip = ref(false);
-const unreadMessages = ref(0); // You can set this based on your backend data
-
-// Add this new method
-const openMessenger = () => {
-  window.open("https://www.facebook.com/ArtzworkPc", "_blank");
-};
-</script>
 
 <style scoped>
 /* Add these styles if you want a pulse animation */

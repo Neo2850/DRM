@@ -17,7 +17,7 @@ use App\Http\Controllers\Client\ClientProfileController;
 
 Route::middleware('auth')->group(function () {
     Route::get('admin/dashboard', [DashboardController::class, 'index'])
-        ->name('dashboard');
+    ->name('dashboard');
     Route::resource('admin/categories', CategoryController::class)
         ->names('categories');
     Route::resource('admin/brands', BrandController::class)

@@ -9,20 +9,20 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        $this->call([
-            CategorySeeder::class,
-            BrandSeeder::class,
-            ProductSeeder::class,
-        ]);
+        // $this->call([
+        //     CategorySeeder::class,
+        //     BrandSeeder::class,
+        //     ProductSeeder::class,
+        // ]);
 
-        User::factory()->create([
+        User::create([
             'first_name' => 'Admin',
             'last_name' => 'User',
             'email' => 'adminuser@gmail.com',
-            'phone' => '09093206353',
+            'phone_number' => '09093206353',
             'role' => 'Admin',
             'status' => 'Inactive',
-            'password' => bcrypt('password'),
+            'password' => bcrypt('password123'),
         ]);
 
         // User::factory()->create([
