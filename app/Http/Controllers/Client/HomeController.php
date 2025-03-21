@@ -8,6 +8,7 @@ use App\Models\Category;
 use App\Models\Brand;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use App\Models\LandingContent;
 
 class HomeController extends Controller
 {
@@ -15,8 +16,9 @@ class HomeController extends Controller
     {
         $categories = Category::all();
         $brands = Brand::all();
+        $landingContents = LandingContent::where('is_active', 1)->get();
         $exploreProducts = Product::with(['category', 'brand', 'specifications'])
-            ->take(1)
+            ->take(2)
             ->get()
             ->map(function ($product) {
                 return [
@@ -31,10 +33,10 @@ class HomeController extends Controller
                     'specifications' => $product->specifications
                 ];
             })
-            ->random(1);
+            ->random(2);
         $latestProducts = Product::with(['category', 'brand', 'specifications'])
             ->latest()
-            ->take(1)
+            ->take(2)
             ->get()
             ->map(function ($product) {
                 return [
@@ -58,7 +60,8 @@ class HomeController extends Controller
             'exploreProducts' => $exploreProducts,
             'latestProducts' => $latestProducts,
             'categories' => $categories,
-            'brands' => $brands
+            'brands' => $brands,
+            'landingContents' => $landingContents
         ]);
     }
 }

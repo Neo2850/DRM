@@ -20,6 +20,11 @@ import AddToCartModal from "../../Components/AddToCartModal.vue";
 import PowerDrill from "@/images/powerDrill.png";
 import RoofSheets from "@/images/roofSheets.png";
 import HydraulicHinges from "@/images/hydraulicHinges.png";
+import { usePage } from "@inertiajs/vue3";
+import { useAI } from "@/Api/ai";
+
+const page = usePage();
+const landingContents = page.props.landingContents;
 
 const props = defineProps({
   exploreProducts: Object,
@@ -145,13 +150,123 @@ const addToCart = (product) => {
 };
 
 // Add these new refs
-const showMessengerTooltip = ref(false);
-const unreadMessages = ref(0); // You can set this based on your backend data
+const showChatWindow = ref(false);
+const chatMessages = ref([]);
+const userInput = ref('');
+const { sendPrompt, isLoading, clearConversation } = useAI();
+const chatWindowSize = ref({ width: 320, height: 450 });
+const isDragging = ref(false);
+const startPosition = ref({ x: 0, y: 0 });
+const chatContainerRef = ref(null);
 
-// Add this new method
-const openMessenger = () => {
-  window.open("https://www.facebook.com/", "_blank");
+// Replace toggleChatWindow method with this
+const toggleChatWindow = () => {
+  if (!showChatWindow.value) {
+    showChatWindow.value = true;
+    if (chatMessages.value.length === 0) {
+      // Add initial greeting
+      chatMessages.value.push({
+        type: 'bot',
+        content: 'Hello! I am Chatter, your AI assistant. How can I help you today with our roofing, glass, and iron works products?'
+      });
+    }
+  } else {
+    showChatWindow.value = false;
+    // Clear conversation history when closing the chat
+    clearConversation();
+    chatMessages.value = [];
+  }
 };
+
+const sendMessage = async () => {
+  if (!userInput.value.trim()) return;
+
+  const userMessage = userInput.value;
+  chatMessages.value.push({
+    type: 'user',
+    content: userMessage
+  });
+
+  userInput.value = '';
+
+  try {
+    const response = await sendPrompt(userMessage);
+    if (response) {
+      // Format the response to handle line breaks and lists
+      const formattedResponse = response
+        .replace(/\n/g, '<br>')
+        .replace(/•/g, '&bull;');
+
+      chatMessages.value.push({
+        type: 'bot',
+        content: formattedResponse
+      });
+
+      // Scroll to the bottom of the chat
+      setTimeout(() => {
+        const chatContainer = document.querySelector('.overflow-y-auto');
+        if (chatContainer) {
+          chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+      }, 100);
+    }
+  } catch (error) {
+    chatMessages.value.push({
+      type: 'bot',
+      content: 'Sorry, I encountered an error. Please try again.'
+    });
+  }
+};
+
+const startResize = (e) => {
+  e.preventDefault();
+  isDragging.value = true;
+  startPosition.value = {
+    x: e.clientX,
+    y: e.clientY,
+    width: chatWindowSize.value.width,
+    height: chatWindowSize.value.height
+  };
+  document.addEventListener('mousemove', handleResize);
+  document.addEventListener('mouseup', stopResize);
+};
+
+const handleResize = (e) => {
+  if (!isDragging.value) return;
+
+  const deltaX = e.clientX - startPosition.value.x;
+  const deltaY = e.clientY - startPosition.value.y;
+
+  chatWindowSize.value = {
+    width: Math.max(300, startPosition.value.width - deltaX),
+    height: Math.max(400, startPosition.value.height - deltaY)
+  };
+};
+
+const stopResize = () => {
+  isDragging.value = false;
+  document.removeEventListener('mousemove', handleResize);
+  document.removeEventListener('mouseup', stopResize);
+};
+
+// Add this to prevent text selection while resizing
+onMounted(() => {
+  updateVisibleCards();
+  window.addEventListener("resize", updateVisibleCards);
+
+  // Add event listener for preventing text selection during resize
+  if (chatContainerRef.value) {
+    chatContainerRef.value.addEventListener('selectstart', (e) => {
+      if (isDragging.value) e.preventDefault();
+    });
+  }
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("resize", updateVisibleCards);
+  document.removeEventListener('mousemove', handleResize);
+  document.removeEventListener('mouseup', stopResize);
+});
 </script>
 
 <template>
@@ -160,21 +275,25 @@ const openMessenger = () => {
     <NavLink />
     <!-- Hero Section -->
     <section class="py-16 bg-gray-50">
-      <div class="container rounded-lg bg-gray-50 mt-1 mx-auto px-4 py-8">
-        <div class="grid md:grid-cols-2 gap-8 items-center">
+        <img
+              v-if="landingContents.length > 0"
+              :src="landingContents[0].image ? '/storage/' + landingContents[0].image : ''"
+              class="absolute top-0 z-1 left-0 w-full h-full object-cover"
+            >
+        <div class="container rounded-lg z-10 bg-gray-50 mt-1 mx-auto px-4 py-8">
+            <div class="grid md:grid-cols-2 gap-8 items-center">
           <!-- Text Section -->
-          <div>
-            <h1 class="text-4xl md:text-5xl font-bold text-navy-900 mb-4 leading-tight">
-              Reliable Roofing, Elegant Glass, and Durable Ironworks – Crafted for You!
+          <div class="z-10">
+            <h1 class="text-4xl md:text-5xl z-10 font-bold text-navy-900 mb-4 leading-tight">
+              {{ landingContents[0]?.hero || 'Reliable Roofing, Elegant Glass, and Durable Ironworks – Crafted for You!' }}
             </h1>
             <p class="text-gray-600 mb-6 leading-relaxed">
-              High-quality materials, expert craftsmanship, and hassle-free ordering.<br />
-              Get a free quote today!
+              {{ landingContents[0]?.description || 'High-quality materials, expert craftsmanship, and hassle-free ordering. Get a free quote today!' }}
             </p>
           </div>
 
           <!-- Images Section -->
-          <div class="grid md:grid-cols-2 gap-3">
+          <div class="grid z-10 md:grid-cols-2 gap-3">
             <div
               class="bg-white rounded-lg p-4 shadow-lg flex justify-center items-center"
             >
@@ -194,7 +313,7 @@ const openMessenger = () => {
                 >
                   SUMMER SALES
                 </div>
-                <div class="w-full h-36 overflow-hidden">
+                <div class="w-full z-10 h-36 overflow-hidden">
                   <img
                   :src="RoofSheets"
                   alt="Roofing Sheets"
@@ -205,7 +324,7 @@ const openMessenger = () => {
                 <div class="text-lg font-bold text-green-600">29% OFF</div>
               </div>
 
-              <div class="bg-white rounded-lg p-4 shadow-lg">
+              <div class="bg-white z-10 rounded-lg p-4 shadow-lg">
                 <img
                   :src="HydraulicHinges"
                   alt="Hydraulic Hinges"
@@ -579,39 +698,92 @@ const openMessenger = () => {
       @close="showSuccessModal = false"
     />
 
-    <!-- Floating Messenger Icon -->
-    <div
-      class="fixed bottom-6 right-6 z-50 group"
-      @mouseenter="showMessengerTooltip = true"
-      @mouseleave="showMessengerTooltip = false"
-    >
-      <!-- Tooltip -->
+    <!-- Replace the Floating Messenger Icon section with this -->
+    <div class="fixed bottom-6 right-6 z-50">
+      <!-- Chat Window -->
+      <div v-if="showChatWindow"
+           ref="chatContainerRef"
+           class="fixed bottom-20 right-6 bg-white rounded-lg shadow-xl overflow-hidden"
+           :style="{
+             width: chatWindowSize.width + 'px',
+             height: chatWindowSize.height + 'px',
+             minWidth: '300px',
+             minHeight: '400px'
+           }">
+        <!-- Chat Header -->
+        <div class="bg-navy-600 text-white p-4 flex justify-between items-center">
+          <div class="flex items-center space-x-2">
+            <MessageCircle class="h-5 w-5" />
+            <span class="font-medium">Chatter AI</span>
+          </div>
+          <button @click="toggleChatWindow" class="hover:text-gray-300">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+            </svg>
+          </button>
+        </div>
 
-      <div
-        v-if="showMessengerTooltip"
-        class="absolute bottom-full right-0 mb-2 bg-white text-gray-800 px-4 py-2 rounded-lg shadow-lg text-sm whitespace-nowrap transform transition-opacity duration-200"
-      >
-        Something in your mind?
-        <div
-          class="absolute bottom-0 right-4 transform translate-y-1/2 rotate-45 w-2 h-2 bg-white"
-        ></div>
+        <!-- Resize Handle -->
+        <div class="absolute top-0 left-0 w-4 h-4 cursor-se-resize z-50"
+             @mousedown.prevent="startResize">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4 text-gray-400">
+            <path d="M16 2H8v2h8V2zm0 7h8v2h-8V9zm0 7h8v2h-8v-2zm0 7h8v2h-8v-2z" />
+          </svg>
+        </div>
+
+        <!-- Chat Messages -->
+        <div class="flex-1 overflow-y-auto p-4" :style="{ height: `${chatWindowSize.height - 140}px` }">
+          <div v-for="(message, index) in chatMessages" :key="index"
+               class="mb-4"
+               :class="{ 'flex justify-end': message.type === 'user' }">
+            <div :class="{
+              'bg-navy-600 text-white rounded-lg p-3 max-w-[80%] break-words': message.type === 'user',
+              'bg-gray-100 text-gray-800 rounded-lg p-3 max-w-[80%] break-words': message.type === 'bot'
+            }"
+            style="min-width: 0;" v-html="message.content">
+            </div>
+          </div>
+          <div v-if="isLoading" class="flex items-center space-x-2 text-gray-500">
+            <div class="animate-bounce">●</div>
+            <div class="animate-bounce" style="animation-delay: 0.2s">●</div>
+            <div class="animate-bounce" style="animation-delay: 0.4s">●</div>
+          </div>
+        </div>
+
+        <!-- Chat Input -->
+        <div class="border-t p-4 bg-white">
+          <div class="flex space-x-2">
+            <input
+              v-model="userInput"
+              type="text"
+              placeholder="Type your message..."
+              class="flex-1 border rounded-lg px-4 py-2 focus:outline-none focus:border-navy-600"
+              @keyup.enter="sendMessage"
+            />
+            <button
+              @click="sendMessage"
+              :disabled="isLoading || !userInput.trim()"
+              class="bg-navy-600 text-white px-4 py-2 rounded-lg hover:bg-navy-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <svg v-if="!isLoading" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+              </svg>
+              <svg v-else class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
       </div>
 
       <!-- Messenger Button -->
       <button
-        @click="openMessenger"
+        @click="toggleChatWindow"
         class="bg-navy-600 hover:bg-navy-700 text-white rounded-full p-4 shadow-lg transition-all duration-300 hover:scale-110"
       >
         <MessageCircle class="h-6 w-6" />
       </button>
-
-      <!-- Notification Badge -->
-      <div
-        v-if="unreadMessages > 0"
-        class="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center"
-      >
-        {{ unreadMessages }}
-      </div>
     </div>
   </div>
 </template>
@@ -632,5 +804,39 @@ const openMessenger = () => {
 
 .group:hover button {
   animation: pulse 2s infinite;
+}
+
+.animate-bounce {
+  animation: bounce 1s infinite;
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+/* Add smooth transitions for chat window resizing */
+[style*="width"][style*="height"] {
+  transition: none;
+}
+
+/* Add these new styles */
+.break-words {
+  word-wrap: break-word;
+  word-break: break-word;
+}
+
+/* Add a visible resize handle */
+[class*="cursor-se-resize"] {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 15px;
+  height: 15px;
+  background: linear-gradient(135deg, transparent 50%, #cbd5e0 50%);
 }
 </style>

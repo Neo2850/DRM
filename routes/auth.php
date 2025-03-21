@@ -13,7 +13,8 @@ use App\Http\Controllers\ClientRegisterController;
 use App\Http\Controllers\EmailVerificationController;
 use App\Http\Middleware\EnsureCustomerIsAuthenticated;
 use App\Http\Controllers\Client\ClientProfileController;
-
+use App\Http\Controllers\PromotionController;
+use App\Http\Controllers\HomeContentController;
 
 Route::middleware('auth')->group(function () {
     Route::get('admin/dashboard', [DashboardController::class, 'index'])
@@ -41,6 +42,14 @@ Route::middleware('auth')->group(function () {
     Route::get('/admin/customers/{id}/orders', [CustomerController::class, 'showOrders'])->name('customers.orders');
     Route::put('/orders/{order}/status', [CustomerController::class, 'updateOrderStatus'])
     ->name('orders.update-status');
+
+    // Promotions Routes
+    Route::resource('admin/promotions', PromotionController::class)
+        ->names('promotions');
+
+    // Home Content Routes
+    Route::resource('admin/home-content', HomeContentController::class)
+        ->names('home-content');
 
 });
 

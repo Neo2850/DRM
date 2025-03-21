@@ -7,7 +7,9 @@ import {
   ShoppingBagIcon,
   UsersIcon,
   ClipboardListIcon,
-  LogOutIcon,
+  ListX,
+  Layers,
+  FilePenLine,
   MenuIcon,
   XIcon,
   PackageIcon,
@@ -22,13 +24,16 @@ const currentPath = computed(() => usePage().url);
 const menuItems = computed(() =>
   [
     { name: "Dashboard", icon: HomeIcon, href: route("dashboard") },
-    { name: "Category", icon: TagIcon, href: route("categories.index") },
+    { name: "Category", icon: Layers, href: route("categories.index") },
     { name: "Brands", icon: ShoppingBagIcon, href: route("brands.index") },
     { name: "Products", icon: PackageIcon, href: route("products.index") },
     { name: "Transactions", icon: ClipboardListIcon, href: route("transactions") },
     { name: "Order History", icon: ClipboardListIcon, href: route("orders.show") },
+    { name: "Promotions", icon: TagIcon, href: route("promotions.index") },
+    { name: "Home Content", icon: FilePenLine, href: route("home-content.index") },
     { name: "Customers", icon: UsersIcon, href: route("customers") },
     { name: "Employees", icon: UsersIcon, href: route("employees.index") },
+    { name: "Returns", icon: ListX, href: route('dashboard') },
   ].map((item) => ({
     ...item,
     current: currentPath.value.startsWith(item.href),
