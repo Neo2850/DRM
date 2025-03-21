@@ -66,13 +66,34 @@
                 <td class="px-6 py-4 whitespace-nowrap">
                   {{ getDate(category.created_at) }}
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-right">
+                <td class="px-6 py-4 whitespace-nowrap text-right relative">
                   <button
                     @click="openActionMenu(index, $event)"
                     class="text-gray-400 hover:text-gray-500 focus:outline-none"
                   >
                     <MoreVerticalIcon class="h-5 w-5" />
                   </button>
+                  <!-- Action Menu -->
+                  <div
+                    v-if="activeActionMenu === index"
+                    class="absolute z-50 bg-white border border-gray-200 shadow-lg rounded-md"
+                    style="top: 0; right: 50%; margin-right: 0.5rem;"
+                    ref="actionMenu"
+                  >
+                    <Link :href="route('categories.edit', categories.data[index].id)">
+                      <button
+                        class="block w-full px-4 py-2 text-sm text-green-500 hover:bg-green-100 text-left"
+                      >
+                        Edit
+                      </button>
+                    </Link>
+                    <button
+                      @click="openDeleteModal(categories.data[index])"
+                      class="block w-full px-4 py-2 text-sm text-red-600 hover:bg-red-100 text-left"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </td>
               </tr>
             </tbody>
@@ -116,27 +137,6 @@
       </div>
     </main>
 
-    <!-- Action Menu -->
-    <div
-      v-if="activeActionMenu !== null"
-      class="fixed z-50 bg-white border border-gray-200 shadow-lg rounded-md"
-      :style="{ top: dropdownPosition.top + 'px', left: dropdownPosition.left + 'px' }"
-    >
-      <Link :href="route('categories.edit', categories.data[activeActionMenu].id)">
-        <button
-          class="block w-full px-4 py-2 text-sm text-green-500 hover:bg-green-100 text-left"
-        >
-          Edit
-        </button>
-      </Link>
-      <button
-        @click="openDeleteModal(categories.data[activeActionMenu])"
-        class="block w-full px-4 py-2 text-sm text-red-600 hover:bg-red-100 text-left"
-      >
-        Delete
-      </button>
-    </div>
-
     <!-- Delete Confirmation Modal -->
     <div v-if="showDeleteModal" class="fixed inset-0 z-50 overflow-y-auto">
       <div class="flex items-center justify-center min-h-screen px-4">
@@ -172,7 +172,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, onUnmounted } from "vue";
 import { Link, router, usePage } from "@inertiajs/vue3";
 import {
   MoreVerticalIcon,
@@ -197,36 +197,16 @@ const showDeleteModal = ref(false);
 const categoryToDelete = ref(null);
 
 const activeActionMenu = ref(null);
-const dropdownPosition = ref({ top: 0, left: 0 });
 
 const toast = ref(null);
 
-onMounted(() => {
-  const page = usePage().props;
-
-  if (page.flash) {
-    if (page.flash.message && toast.value) {
-      toast.value.addToast(page.flash.message, page.flash.type || "success");
-    }
-
-    if (page.errors && Object.keys(page.errors).length > 0) {
-      const errorMessage = Object.values(page.errors)[0];
-      if (toast.value) {
-        toast.value.addToast(errorMessage, "error");
-      }
-    }
-  }
-});
+const actionMenu = ref(null);
 
 const openActionMenu = (index, event) => {
   if (activeActionMenu.value === index) {
     closeActionMenu();
   } else {
     activeActionMenu.value = index;
-    dropdownPosition.value = {
-      top: event.target.getBoundingClientRect().bottom + window.scrollY - 70,
-      left: event.target.getBoundingClientRect().right - 100 + window.scrollX,
-    };
   }
 };
 
@@ -257,6 +237,35 @@ const confirmDelete = () => {
     },
   });
 };
+
+const handleClickOutside = (event) => {
+  if (actionMenu.value && !actionMenu.value.contains(event.target) && !event.target.closest('button')) {
+    closeActionMenu();
+  }
+};
+
+onMounted(() => {
+  const page = usePage().props;
+
+  if (page.flash) {
+    if (page.flash.message && toast.value) {
+      toast.value.addToast(page.flash.message, page.flash.type || "success");
+    }
+
+    if (page.errors && Object.keys(page.errors).length > 0) {
+      const errorMessage = Object.values(page.errors)[0];
+      if (toast.value) {
+        toast.value.addToast(errorMessage, "error");
+      }
+    }
+  }
+
+  document.addEventListener('click', handleClickOutside);
+});
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside);
+});
 
 const makeLabel = (label) => {
   if (label.includes("Previous")) return "<";

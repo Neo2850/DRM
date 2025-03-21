@@ -19,6 +19,8 @@ return new class extends Migration
             $table->integer('quantity')->default(1); // Default to 1 item
             $table->decimal('price', 10, 2); // Unit price at the time of addition
             $table->boolean('selected')->default(true);
+            $table->string('size')->nullable();
+            $table->string('kind')->nullable();
             $table->timestamps(); // Created at and Updated at
 
             // Ensure either customer_id or session_id is used

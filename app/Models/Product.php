@@ -27,6 +27,10 @@ class Product extends Model
         'product_images' => 'array',
     ];
 
+    public function variants() {
+        return $this->hasMany(ProductVariants::class);
+    }
+
     public function scopeFilter($query, array $filters)
     {
         // Search filter

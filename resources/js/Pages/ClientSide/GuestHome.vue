@@ -150,7 +150,7 @@ const unreadMessages = ref(0); // You can set this based on your backend data
 
 // Add this new method
 const openMessenger = () => {
-  window.open("https://www.facebook.com/ArtzworkPc", "_blank");
+  window.open("https://www.facebook.com/", "_blank");
 };
 </script>
 
@@ -175,7 +175,6 @@ const openMessenger = () => {
 
           <!-- Images Section -->
           <div class="grid md:grid-cols-2 gap-3">
-            <!-- Xbox Console -->
             <div
               class="bg-white rounded-lg p-4 shadow-lg flex justify-center items-center"
             >
@@ -199,14 +198,13 @@ const openMessenger = () => {
                   <img
                   :src="RoofSheets"
                   alt="Roofing Sheets"
-                  class="relative -top-10 " 
+                  class="relative -top-10 "
                 />
                 </div>
                 <h3 class="font-semibold mt-2">Metal Barrel Roof Tiles</h3>
                 <div class="text-lg font-bold text-green-600">29% OFF</div>
               </div>
 
-              <!-- Play Station 5 -->
               <div class="bg-white rounded-lg p-4 shadow-lg">
                 <img
                   :src="HydraulicHinges"
@@ -420,7 +418,7 @@ const openMessenger = () => {
                     category.image ? '/storage/' + category.image : 'storage/default.jpg'
                   "
                   :alt="category.name"
-                  class="w-full h-48 object-cover"
+                  class="w-full h-48 object-contain"
                 />
                 <div class="p-4">
                   <h3 class="font-medium truncate whitespace-nowrap overflow-hidden">
@@ -593,7 +591,7 @@ const openMessenger = () => {
         v-if="showMessengerTooltip"
         class="absolute bottom-full right-0 mb-2 bg-white text-gray-800 px-4 py-2 rounded-lg shadow-lg text-sm whitespace-nowrap transform transition-opacity duration-200"
       >
-        Chat with us
+        Something in your mind?
         <div
           class="absolute bottom-0 right-4 transform translate-y-1/2 rotate-45 w-2 h-2 bg-white"
         ></div>

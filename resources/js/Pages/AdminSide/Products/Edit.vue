@@ -303,6 +303,90 @@
               </div>
             </div>
 
+            <!-- Sizes and Kinds Section -->
+            <div class="bg-white rounded-lg shadow p-6">
+              <h2 class="text-lg font-medium mb-4">Sizes and Kinds</h2>
+              <div class="space-y-4">
+                <!-- Sizes -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Sizes</label>
+                  <div class="flex gap-2 mb-2">
+                    <input
+                      v-model="newSize"
+                      type="text"
+                      placeholder="Add size (e.g., S, M, L)"
+                      class="flex-1 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <button
+                      type="button"
+                      @click="addSize"
+                      class="px-4 py-2 bg-navy-600 text-white rounded-md hover:bg-navy-700"
+                    >
+                      Add Size
+                    </button>
+                  </div>
+                  <div class="flex flex-wrap gap-2">
+                    <div
+                      v-for="(size, index) in form.sizes"
+                      :key="index"
+                      class="flex items-center gap-1 px-3 py-1 bg-gray-100 rounded-full"
+                    >
+                      <span class="text-sm">{{ size }}</span>
+                      <button
+                        type="button"
+                        @click="removeSize(index)"
+                        class="text-gray-500 hover:text-red-600"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  </div>
+                  <small v-show="form.errors.sizes" class="text-red-700">{{
+                    form.errors.sizes
+                  }}</small>
+                </div>
+
+                <!-- Kinds -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Kinds</label>
+                  <div class="flex gap-2 mb-2">
+                    <input
+                      v-model="newKind"
+                      type="text"
+                      placeholder="Add kind (e.g., Red, Blue)"
+                      class="flex-1 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <button
+                      type="button"
+                      @click="addKind"
+                      class="px-4 py-2 bg-navy-600 text-white rounded-md hover:bg-navy-700"
+                    >
+                      Add Kind
+                    </button>
+                  </div>
+                  <div class="flex flex-wrap gap-2">
+                    <div
+                      v-for="(kind, index) in form.kinds"
+                      :key="index"
+                      class="flex items-center gap-1 px-3 py-1 bg-gray-100 rounded-full"
+                    >
+                      <span class="text-sm">{{ kind }}</span>
+                      <button
+                        type="button"
+                        @click="removeKind(index)"
+                        class="text-gray-500 hover:text-red-600"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  </div>
+                  <small v-show="form.errors.kinds" class="text-red-700">{{
+                    form.errors.kinds
+                  }}</small>
+                </div>
+              </div>
+            </div>
+
             <!-- Form Actions -->
             <div class="flex justify-end space-x-4">
               <Link
@@ -356,11 +440,20 @@ const form = useForm({
   brand_id: props.product.brand_id,
   warranty: props.product.warranty,
   specifications: props.product.specifications || [],
-  _method: "PUT", // For Laravel to recognize this as a PUT request
+  sizes: [...new Set(props.product.variants?.map(v => v.sizes) || [])],
+  kinds: [...new Set(props.product.variants?.map(v => v.kinds).filter(Boolean) || [])],
+  _method: "PUT",
 });
+
+// Debug log to check variants data
+console.log('Product Variants:', props.product.variants);
+console.log('Loaded Sizes:', form.sizes);
+console.log('Loaded Kinds:', form.kinds);
 
 const currentSpecifications = ref([]);
 const imagePreviews = ref([]); // Initialize with existing images
+const newSize = ref('');
+const newKind = ref('');
 
 // Load existing images into previews
 if (props.product.product_images && props.product.product_images.length > 0) {
@@ -476,6 +569,29 @@ const updateForm = () => {
       form.reset("images");
     },
   });
+};
+
+// Methods for managing sizes and kinds
+const addSize = () => {
+  if (newSize.value.trim() && !form.sizes.includes(newSize.value.trim())) {
+    form.sizes.push(newSize.value.trim());
+    newSize.value = '';
+  }
+};
+
+const removeSize = (index) => {
+  form.sizes.splice(index, 1);
+};
+
+const addKind = () => {
+  if (newKind.value.trim() && !form.kinds.includes(newKind.value.trim())) {
+    form.kinds.push(newKind.value.trim());
+    newKind.value = '';
+  }
+};
+
+const removeKind = (index) => {
+  form.kinds.splice(index, 1);
 };
 </script>
 

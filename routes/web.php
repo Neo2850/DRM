@@ -39,6 +39,7 @@ Route::middleware(['web'])->group(function () {
         Route::post('/cart/update-all-selections', 'updateAllSelections')
             ->name('cart.updateAllSelections');
         Route::post('/cart/add-multiple', 'addMultiple')->name('cart.add-multiple');
+        Route::post('/cart/update-options', 'updateOptions')->name('cart.updateOptions');
     });
 });
 

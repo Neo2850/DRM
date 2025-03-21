@@ -136,38 +136,12 @@
                 </div>
                 <div class="space-y-2">
                   <!-- Right Column -->
-                  <div class="flex items-start">
-                    <span class="text-sm font-semibold text-gray-500 w-40"
-                      >{{ product.specifications[0].name }}:</span
-                    >
-                    <span class="text-sm font-medium text-gray-900">{{
-                      product.specifications[0].value
-                    }}</span>
-                  </div>
-                  <div class="flex items-start">
-                    <span class="text-sm font-semibold text-gray-500 w-40"
-                      >{{ product.specifications[1].name }}:</span
-                    >
-                    <span class="text-sm font-medium text-gray-900">{{
-                      product.specifications[1].value
-                    }}</span>
-                  </div>
-                  <div class="flex items-start">
-                    <span class="text-sm font-semibold text-gray-500 w-40"
-                      >{{ product.specifications[2].name }}:</span
-                    >
-                    <span class="text-sm font-medium text-gray-900">{{
-                      product.specifications[2].value
-                    }}</span>
-                  </div>
-                  <div class="flex items-start">
-                    <span class="text-sm font-semibold text-gray-500 w-40"
-                      >{{ product.specifications[3].name }}:</span
-                    >
-                    <span class="text-sm font-medium text-gray-900">{{
-                      product.specifications[3].value
-                    }}</span>
-                  </div>
+                  <template v-if="product.specifications && product.specifications.length > 0">
+                    <div v-for="(spec, index) in product.specifications" :key="index" class="flex items-start">
+                      <span class="text-sm font-semibold text-gray-500 w-40">{{ spec.name }}:</span>
+                      <span class="text-sm font-medium text-gray-900">{{ spec.value }}</span>
+                    </div>
+                  </template>
                 </div>
               </div>
             </div>
@@ -175,11 +149,57 @@
 
           <!-- Price and Add to Cart -->
           <div class="space-y-4">
-            <!-- Price and Quantity -->
-            <div class="flex items-center justify-between">
-              <span class="text-3xl font-bold text-gray-900">₱{{ product.price }}</span>
+            <!-- Product Price -->
+            <div class="text-3xl font-bold text-gray-900 mb-6">₱{{ product.price }}</div>
 
-              <!-- Quantity Selector -->
+            <!-- Size Selection -->
+            <div v-if="product.variants && product.variants.length > 0" class="mb-4">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Size</label>
+              <div class="flex flex-wrap gap-2">
+                <button
+                  v-for="size in uniqueSizes"
+                  :key="size"
+                  @click="selectSize(size)"
+                  :class="[
+                    'px-4 py-2 rounded-md text-sm font-medium',
+                    selectedSize === size
+                      ? 'bg-navy-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  ]"
+                >
+                  {{ size }}
+                </button>
+              </div>
+              <p v-if="showSizeError" class="mt-1 text-sm text-red-600">
+                Please select a size
+              </p>
+            </div>
+
+            <!-- Kind/Variant Selection -->
+            <div v-if="product.variants && hasKinds" class="mb-6">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Variant</label>
+              <div class="flex flex-wrap gap-2">
+                <button
+                  v-for="kind in uniqueKinds"
+                  :key="kind"
+                  @click="selectKind(kind)"
+                  :class="[
+                    'px-4 py-2 rounded-md text-sm font-medium',
+                    selectedKind === kind
+                      ? 'bg-navy-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  ]"
+                >
+                  {{ kind }}
+                </button>
+              </div>
+              <p v-if="showKindError" class="mt-1 text-sm text-red-600">
+                Please select a variant
+              </p>
+            </div>
+
+            <!-- Quantity -->
+            <div class="flex items-center space-x-4 mb-6">
               <div class="flex items-center border rounded-lg bg-white shadow-sm">
                 <button
                   @click="quantity > 1 && quantity--"
@@ -208,18 +228,6 @@
                 class="flex-none w-20 h-12 flex items-center justify-center rounded-lg border border-gray-300 hover:bg-gray-200 transition-colors"
               >
                 <HeartIcon class="h-5 w-5 text-gray-600 hover:text-red-500" />
-              </button>
-
-              <!-- Compare Button -->
-              <button
-                @click="toggleProductForComparison(product)"
-                class="flex-none w-20 h-12 flex items-center justify-center rounded-lg border border-gray-300 hover:bg-gray-200 transition-colors"
-                :class="{ 'bg-navy-100 border-navy-600': isSelectedForComparison(product.id) }"
-              >
-                <ArrowUpDown
-                  class="h-5 w-5"
-                  :class="isSelectedForComparison(product.id) ? 'text-navy-600' : 'text-gray-600'"
-                />
               </button>
 
               <!-- Add to Cart Button -->
@@ -449,16 +457,6 @@
                       <HeartIcon class="h-4 w-4 sm:h-5 sm:w-5 hover:text-red-500" />
                     </button>
                     <button
-                      @click.prevent="toggleProductForComparison(product)"
-                      class="p-1.5 sm:p-1.5 primary-color bg-[#e2e8f0] rounded-lg"
-                      :class="{ 'bg-navy-100 border-navy-600': isSelectedForComparison(product.id) }"
-                    >
-                      <ArrowUpDown
-                        class="h-4 w-4 sm:h-5 sm:w-5"
-                        :class="isSelectedForComparison(product.id) ? 'text-navy-600' : 'text-gray-600'"
-                      />
-                    </button>
-                    <button
                       @click.prevent="addSimilarToCart(product)"
                       class="p-1.5 sm:p-1.5 button-primary rounded-lg"
                     >
@@ -657,7 +655,57 @@ const toggleWishlist = (productId) => {
 const showSuccessModal = ref(false);
 const addedProduct = ref(null);
 
+// Add these new refs for size and kind selection
+const selectedSize = ref('');
+const selectedKind = ref('');
+const showSizeError = ref(false);
+const showKindError = ref(false);
+
+// Computed properties for unique sizes and kinds
+const uniqueSizes = computed(() => {
+  if (!props.product.variants) return [];
+  return [...new Set(props.product.variants.map(v => v.sizes))];
+});
+
+const uniqueKinds = computed(() => {
+  if (!props.product.variants) return [];
+  return [...new Set(props.product.variants.map(v => v.kinds).filter(Boolean))];
+});
+
+const hasKinds = computed(() => {
+  return uniqueKinds.value.length > 0;
+});
+
+// Methods for handling size and kind selection
+const selectSize = (size) => {
+  selectedSize.value = size;
+  showSizeError.value = false;
+};
+
+const selectKind = (kind) => {
+  selectedKind.value = kind;
+  showKindError.value = false;
+};
+
+// Update addToCart method to include validation
 const addToCart = () => {
+  // Reset error states
+  showSizeError.value = false;
+  showKindError.value = false;
+
+  // Validate selections if variants exist
+  if (props.product.variants && props.product.variants.length > 0) {
+    if (!selectedSize.value) {
+      showSizeError.value = true;
+      return;
+    }
+
+    if (hasKinds.value && !selectedKind.value) {
+      showKindError.value = true;
+      return;
+    }
+  }
+
   router.post(
     route("cart.add"),
     {
@@ -665,6 +713,8 @@ const addToCart = () => {
       name: props.product.name,
       price: props.product.price,
       quantity: quantity.value,
+      size: selectedSize.value,
+      kind: selectedKind.value,
       image:
         props.product.product_images && props.product.product_images.length > 0
           ? "/storage/" + props.product.product_images[0]
@@ -677,12 +727,17 @@ const addToCart = () => {
           name: props.product.name,
           price: props.product.price,
           quantity: quantity.value,
+          size: selectedSize.value,
+          kind: selectedKind.value,
           image:
             props.product.product_images && props.product.product_images.length > 0
               ? "/storage/" + props.product.product_images[0]
               : "/storage/default.jpg",
         };
         showSuccessModal.value = true;
+        // Reset selections after successful add
+        selectedSize.value = '';
+        selectedKind.value = '';
       },
     }
   );
@@ -718,13 +773,13 @@ const addSimilarToCart = (product) => {
 };
 
 // Add this with your other functions
-const redirectToCompare = (product) => {
-  router.get(route('compare.products'), {
-    category_id: props.product.category_id,
-    product1: props.product.id,
-    product2: product.id
-  });
-};
+// const redirectToCompare = (product) => {
+//   router.get(route('compare.products'), {
+//     category_id: props.product.category_id,
+//     product1: props.product.id,
+//     product2: product.id
+//   });
+// };
 
 const showCompareReminder = ref(false);
 const selectedProducts = ref([]);

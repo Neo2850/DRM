@@ -15,6 +15,7 @@ class ProductViewController extends Controller
             ->with([
                 'brand',
                 'category',
+                'variants',
                 'specifications' => function($query) {
                     $query->select('specifications.id', 'specifications.name', 'product_specifications.value');
                 }

@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
+use App\Models\Product;
 
 class CartController extends Controller
 {
@@ -29,6 +30,11 @@ class CartController extends Controller
                         $item->quantity,        // [3] quantity
                         $item->product->product_images[0] ?? null, // [4] image
                         $item->selected ?? true, // [5] selected - default to true if null
+                        $item->product->slug,    // [6] slug for product link
+                        $item->product->sizes,   // [7] available sizes array
+                        $item->product->kinds,   // [8] available kinds array
+                        $item->size ?? '',       // [9] selected size
+                        $item->kind ?? '',       // [10] selected kind
                     ];
                 })
                 ->keyBy(function ($item) {
@@ -39,14 +45,23 @@ class CartController extends Controller
             // Get cart items from session for guests
             $cart = Session::get('cart', []);
             foreach ($cart as $productId => $item) {
-                $cartItems[$productId] = [
-                    $productId,           // [0] id
-                    $item['name'],        // [1] name
-                    $item['price'],       // [2] price
-                    $item['quantity'],    // [3] quantity
-                    $item['image'],       // [4] image
-                    $item['selected'],    // [5] selected
-                ];
+                // Fetch the product to get its slug and other details
+                $product = Product::find($productId);
+                if ($product) {
+                    $cartItems[$productId] = [
+                        $productId,           // [0] id
+                        $item['name'],        // [1] name
+                        $item['price'],       // [2] price
+                        $item['quantity'],    // [3] quantity
+                        $item['image'],       // [4] image
+                        $item['selected'],    // [5] selected
+                        $product->slug,       // [6] slug for product link
+                        $product->sizes,      // [7] available sizes array
+                        $product->kinds,      // [8] available kinds array
+                        $item['size'] ?? '',  // [9] selected size
+                        $item['kind'] ?? '',  // [10] selected kind
+                    ];
+                }
             }
         }
 
@@ -91,7 +106,9 @@ class CartController extends Controller
                     'price' => $request->price,
                     'quantity' => $request->quantity,
                     'image' => $request->image,
-                    'selected' => true
+                    'selected' => true,
+                    'size' => $request->size ?? '',
+                    'kind' => $request->kind ?? ''
                 ];
             }
 
@@ -205,7 +222,9 @@ class CartController extends Controller
             'items.*.name' => 'required|string',
             'items.*.price' => 'required|numeric',
             'items.*.quantity' => 'required|integer|min:1',
-            'items.*.image' => 'required|string'
+            'items.*.image' => 'required|string',
+            'items.*.size' => 'nullable|string',
+            'items.*.kind' => 'nullable|string'
         ]);
 
         if (Auth::guard('customer')->check()) {
@@ -218,7 +237,9 @@ class CartController extends Controller
                     ],
                     [
                         'quantity' => $item['quantity'],
-                        'price' => $item['price']
+                        'price' => $item['price'],
+                        'size' => $item['size'] ?? '',
+                        'kind' => $item['kind'] ?? ''
                     ]
                 );
             }
@@ -233,7 +254,9 @@ class CartController extends Controller
                     'price' => $item['price'],
                     'quantity' => $item['quantity'],
                     'image' => $item['image'],
-                    'selected' => true
+                    'selected' => true,
+                    'size' => $item['size'] ?? '',
+                    'kind' => $item['kind'] ?? ''
                 ];
             }
 
@@ -241,5 +264,30 @@ class CartController extends Controller
         }
 
         return back()->with('success', 'All items added to cart successfully');
+    }
+
+    public function updateOptions(Request $request)
+    {
+        if (Auth::guard('customer')->check()) {
+            // For authenticated users, update database
+            CartItem::where('customer_id', Auth::guard('customer')->id())
+                ->where('product_id', $request->product_id)
+                ->update([
+                    'size' => $request->size,
+                    'kind' => $request->kind
+                ]);
+        } else {
+            // For guests, update session
+            $cart = Session::get('cart', []);
+            $productId = $request->product_id;
+
+            if (isset($cart[$productId])) {
+                $cart[$productId]['size'] = $request->size;
+                $cart[$productId]['kind'] = $request->kind;
+                Session::put('cart', $cart);
+            }
+        }
+
+        return back()->with('success', 'Options updated successfully');
     }
 }

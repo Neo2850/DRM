@@ -124,6 +124,11 @@
                     <h3 class="text-sm font-medium text-gray-900">{{ item.name }}</h3>
                     <p class="mt-1 text-sm text-gray-500">{{ item.brand }} | {{ item.category }}</p>
                     <p class="mt-1 text-sm text-gray-500">SKU: {{ item.sku }}</p>
+                    <div v-if="item.size || item.kind" class="mt-1 text-sm text-gray-500">
+                      <span v-if="item.size">Size: {{ item.size }}</span>
+                      <span v-if="item.size && item.kind"> | </span>
+                      <span v-if="item.kind">Variant: {{ item.kind }}</span>
+                    </div>
                   </div>
                   <div class="text-right">
                     <p class="text-sm font-medium text-gray-900">₱{{ formatPrice(item.unit_price) }}</p>

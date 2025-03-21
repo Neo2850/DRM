@@ -9,6 +9,7 @@ use App\Models\Category;
 use Illuminate\Http\Request;
 use App\Models\ProductSpecification;
 use Illuminate\Support\Facades\Storage;
+use App\Models\ProductVariants;
 
 class ProductController extends Controller
 {
@@ -39,57 +40,74 @@ class ProductController extends Controller
      * Store a newly created resource in storage.
      */
     public function store(Request $request)
-{
-    $validated = $request->validate([
-        'name' => 'required|string|max:255',
-        'slug' => 'required|string|max:255|unique:products',
-        'description' => 'required|string',
-        'price' => 'required|numeric|min:0',
-        'stock' => 'required|integer|min:0',
-        'category_id' => 'required|exists:categories,id',
-        'brand_id' => 'required|exists:brands,id',
-        'warranty' => 'required|string|max:255',
-        'images.*' => 'nullable|file|image|max:10240',
-        'specifications' => 'nullable|array',
-        'specifications.*.id' => 'required|integer|exists:specifications,id',
-        'specifications.*.value' => 'required|string|max:255',
-    ]);
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'slug' => 'required|string|max:255|unique:products',
+            'description' => 'required|string',
+            'price' => 'required|numeric|min:0',
+            'stock' => 'required|integer|min:0',
+            'category_id' => 'required|exists:categories,id',
+            'brand_id' => 'required|exists:brands,id',
+            'warranty' => 'required|string|max:255',
+            'sizes' => 'nullable|array',
+            'sizes.*' => 'string',
+            'kinds' => 'nullable|array',
+            'kinds.*' => 'string',
+            'images.*' => 'nullable|file|image|max:10240',
+            'specifications' => 'nullable|array',
+            'specifications.*.id' => 'required|integer|exists:specifications,id',
+            'specifications.*.value' => 'required|string|max:255',
+        ]);
 
-    try {
-        // Handle image uploads
-        $images = [];
-        if ($request->hasFile('images')) {
-            foreach ($request->file('images') as $image) {
-                $images[] = $image->store('product_images', 'public');
+        try {
+            // Handle image uploads
+            $images = [];
+            if ($request->hasFile('images')) {
+                foreach ($request->file('images') as $image) {
+                    $images[] = $image->store('product_images', 'public');
+                }
             }
-        }
 
-        // Save product
-        $product = Product::create(array_merge($validated, [
-            'product_images' => $images,
-            'sku' => '', // Placeholder SKU
-        ]));
+            // Save product
+            $product = Product::create(array_merge(
+                collect($validated)->except(['sizes', 'kinds'])->toArray(),
+                ['product_images' => $images, 'sku' => '']
+            ));
 
-        // Generate SKU
-        $category = Category::find($validated['category_id']);
-        $product->update(['sku' => $category->sku . '-' . $product->id]);
+            // Generate SKU
+            $category = Category::find($validated['category_id']);
+            $product->update(['sku' => $category->sku . '-' . $product->id]);
 
-        // Attach specifications
-        if (!empty($validated['specifications'])) {
-            foreach ($validated['specifications'] as $spec) {
-                ProductSpecification::create([
-                    'product_id' => $product->id,
-                    'spec_id' => $spec['id'],
-                    'value' => $spec['value'],
-                ]);
+            // Create product variants
+            if (!empty($validated['sizes']) || !empty($validated['kinds'])) {
+                foreach ($validated['sizes'] as $size) {
+                    foreach ($validated['kinds'] ?? [''] as $kind) {
+                        ProductVariants::create([
+                            'product_id' => $product->id,
+                            'sizes' => $size,
+                            'kinds' => $kind ?: null
+                        ]);
+                    }
+                }
             }
-        }
 
-        return redirect()->route('products.index')->with('success', 'Product created successfully!');
-    } catch (\Exception $e) {
-        return back()->withErrors(['error' => $e->getMessage()]);
+            // Attach specifications
+            if (!empty($validated['specifications'])) {
+                foreach ($validated['specifications'] as $spec) {
+                    ProductSpecification::create([
+                        'product_id' => $product->id,
+                        'spec_id' => $spec['id'],
+                        'value' => $spec['value'],
+                    ]);
+                }
+            }
+
+            return redirect()->route('products.index')->with('success', 'Product created successfully!');
+        } catch (\Exception $e) {
+            return back()->withErrors(['error' => $e->getMessage()]);
+        }
     }
-}
 
     /**
      * Display the specified resource.
@@ -105,9 +123,12 @@ class ProductController extends Controller
     public function edit(Product $product)
     {
         return Inertia::render('AdminSide/Products/Edit', [
-            'product' => $product->load(['specifications' => function($query) {
-                $query->select('specifications.id', 'specifications.name', 'product_specifications.value');
-            }]),
+            'product' => $product->load([
+                'specifications' => function($query) {
+                    $query->select('specifications.id', 'specifications.name', 'product_specifications.value');
+                },
+                'variants'
+            ]),
             'categories' => Category::with('specifications')->get(),
             'brands' => Brand::all(),
         ]);
@@ -126,6 +147,10 @@ class ProductController extends Controller
             'category_id' => 'required|exists:categories,id',
             'brand_id' => 'required|exists:brands,id',
             'warranty' => 'required|string|max:255',
+            'sizes' => 'nullable|array',
+            'sizes.*' => 'string',
+            'kinds' => 'nullable|array',
+            'kinds.*' => 'string',
             'images.*' => 'nullable|file|image|max:10240',
             'specifications' => 'nullable|array',
             'specifications.*.id' => 'required|integer|exists:specifications,id',
@@ -137,9 +162,7 @@ class ProductController extends Controller
             // Handle image deletions first
             if ($request->remove_images) {
                 foreach ($request->remove_images as $image) {
-                    // Delete the file from storage
                     Storage::disk('public')->delete($image);
-                    // Remove from product's images array
                     $product->product_images = array_diff($product->product_images, [$image]);
                 }
             }
@@ -156,23 +179,31 @@ class ProductController extends Controller
             $allImages = array_merge($product->product_images ?? [], $newImages);
 
             // Update product with basic information
-            $product->update([
-                'name' => $validated['name'],
-                'slug' => $validated['slug'],
-                'description' => $validated['description'],
-                'price' => $validated['price'],
-                'stock' => $validated['stock'],
-                'category_id' => $validated['category_id'],
-                'brand_id' => $validated['brand_id'],
-                'warranty' => $validated['warranty'],
-                'product_images' => $allImages,
-            ]);
+            $product->update(array_merge(
+                collect($validated)->except(['sizes', 'kinds'])->toArray(),
+                ['product_images' => $allImages]
+            ));
+
+            // Update variants
+            // First, delete existing variants
+            $product->variants()->delete();
+
+            // Then create new variants
+            if (!empty($validated['sizes']) || !empty($validated['kinds'])) {
+                foreach ($validated['sizes'] as $size) {
+                    foreach ($validated['kinds'] ?? [''] as $kind) {
+                        ProductVariants::create([
+                            'product_id' => $product->id,
+                            'sizes' => $size,
+                            'kinds' => $kind ?: null
+                        ]);
+                    }
+                }
+            }
 
             // Update specifications
-            // First, delete existing specifications
             $product->specifications()->detach();
 
-            // Then add new specifications
             if (!empty($validated['specifications'])) {
                 foreach ($validated['specifications'] as $spec) {
                     ProductSpecification::create([

@@ -187,7 +187,7 @@
             </div>
 
             <!-- Stock Section -->
-            <div class="bg-white rounded-lg shadow p-6">
+            <div class="bg-white rounded-xl shadow-sm p-6">
               <h2 class="text-lg font-medium mb-4">Stock</h2>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Stock</label>
@@ -204,6 +204,88 @@
                 <small v-show="form.errors.stock" class="text-red-700">{{ form.errors.stock }}</small>
               </div>
             </div>
+
+            <!-- Sizes and Kinds Section -->
+            <div class="bg-white rounded-lg shadow p-6">
+              <h2 class="text-lg font-medium mb-4">Sizes and Kinds</h2>
+
+              <!-- Sizes -->
+              <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Sizes</label>
+                <div class="flex gap-2 mb-2">
+                  <input
+                    v-model="newSize"
+                    type="text"
+                    placeholder="Enter size (e.g., S, M, L, XL)"
+                    class="flex-1 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    @keyup.enter="addSize"
+                  />
+                  <button
+                    type="button"
+                    @click="addSize"
+                    class="px-4 py-2 bg-navy-600 text-white rounded-md hover:bg-navy-700"
+                  >
+                    Add
+                  </button>
+                </div>
+                <!-- Size Tags -->
+                <div class="flex flex-wrap gap-2">
+                  <div
+                    v-for="(size, index) in form.sizes"
+                    :key="index"
+                    class="bg-gray-100 px-3 py-1 rounded-full flex items-center gap-2"
+                  >
+                    <span>{{ size }}</span>
+                    <button
+                      type="button"
+                      @click="removeSize(index)"
+                      class="text-gray-500 hover:text-red-500"
+                    >
+                      ×
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Kinds -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Kinds/Variants</label>
+                <div class="flex gap-2 mb-2">
+                  <input
+                    v-model="newKind"
+                    type="text"
+                    placeholder="Enter kind (e.g., Red, Blue, Cotton)"
+                    class="flex-1 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    @keyup.enter="addKind"
+                  />
+                  <button
+                    type="button"
+                    @click="addKind"
+                    class="px-4 py-2 bg-navy-600 text-white rounded-md hover:bg-navy-700"
+                  >
+                    Add
+                  </button>
+                </div>
+                <!-- Kind Tags -->
+                <div class="flex flex-wrap gap-2">
+                  <div
+                    v-for="(kind, index) in form.kinds"
+                    :key="index"
+                    class="bg-gray-100 px-3 py-1 rounded-full flex items-center gap-2"
+                  >
+                    <span>{{ kind }}</span>
+                    <button
+                      type="button"
+                      @click="removeKind(index)"
+                      class="text-gray-500 hover:text-red-500"
+                    >
+                      ×
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- End Sizes and Kinds Section -->
 
             <!-- Associations -->
             <div class="bg-white rounded-lg shadow p-6">
@@ -313,6 +395,8 @@ const form = useForm({
   brand_id: "",
   warranty: "",
   specifications: [],
+  sizes: [],
+  kinds: [],
 });
 
 const currentSpecifications = ref([]);
@@ -396,14 +480,15 @@ const removeImage = (index) => {
 };
 
 const submitForm = () => {
+  // Ensure sizes and kinds are properly formatted before submission
   form.post(route("products.store"), {
     onSuccess: () => {
-      // Optional: Redirect to the product index or reset the form
       form.reset();
       currentSpecifications.value = [];
+      newSize.value = "";
+      newKind.value = "";
     },
     onError: (errors) => {
-      // Handle validation errors
       console.error(errors);
     },
   });
@@ -414,6 +499,39 @@ const clearRelatedErrors = () => {
   form.clearErrors('name');
   form.clearErrors('slug');
   form.clearErrors('sku');
+};
+
+// Add after the existing refs
+const newSize = ref("");
+const newKind = ref("");
+
+// Update these methods for proper handling
+const addSize = () => {
+  if (newSize.value.trim()) {
+    // Make sure we're not adding duplicates
+    if (!form.sizes.includes(newSize.value.trim())) {
+      form.sizes.push(newSize.value.trim());
+    }
+    newSize.value = "";
+  }
+};
+
+const removeSize = (index) => {
+  form.sizes.splice(index, 1);
+};
+
+const addKind = () => {
+  if (newKind.value.trim()) {
+    // Make sure we're not adding duplicates
+    if (!form.kinds.includes(newKind.value.trim())) {
+      form.kinds.push(newKind.value.trim());
+    }
+    newKind.value = "";
+  }
+};
+
+const removeKind = (index) => {
+  form.kinds.splice(index, 1);
 };
 </script>
 

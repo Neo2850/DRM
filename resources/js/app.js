@@ -6,7 +6,7 @@ import { ZiggyVue } from '../../vendor/tightenco/ziggy'
 
 createInertiaApp({
   progress: true,
-  title: (title) => `DRM | ${title}`,
+  title: (title) => `DRM ${title}`,
   resolve: name => {
     const pages = import.meta.glob('./Pages/**/*.vue', { eager: true })
     return pages[`./Pages/${name}.vue`]

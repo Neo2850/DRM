@@ -16,7 +16,7 @@ class HomeController extends Controller
         $categories = Category::all();
         $brands = Brand::all();
         $exploreProducts = Product::with(['category', 'brand', 'specifications'])
-            ->take(0)
+            ->take(1)
             ->get()
             ->map(function ($product) {
                 return [
@@ -31,10 +31,10 @@ class HomeController extends Controller
                     'specifications' => $product->specifications
                 ];
             })
-            ->random(0);
+            ->random(1);
         $latestProducts = Product::with(['category', 'brand', 'specifications'])
             ->latest()
-            ->take(0)
+            ->take(1)
             ->get()
             ->map(function ($product) {
                 return [

@@ -55,10 +55,48 @@
 
                 <div class="flex-grow">
                   <div class="flex justify-between mb-2">
-                    <h3 class="text-lg font-medium text-gray-900">{{ item[1] }}</h3>
+                    <Link
+                      :href="route('product.view', { slug: item[6] })"
+                      class="text-lg font-medium text-gray-900 hover:text-navy-600 transition-colors"
+                    >
+                      {{ item[1] }}
+                    </Link>
                     <p class="text-lg font-medium text-gray-900">
                       ₱{{ formatPrice(item[2] * item[3]) }}
                     </p>
+                  </div>
+
+                  <!-- Size and Kind Selection -->
+                  <div class="mb-3 space-y-2" v-if="item[7]?.length || item[8]?.length">
+                    <!-- Size Selection -->
+                    <div v-if="item[7]?.length" class="flex items-center gap-2">
+                      <span class="text-sm text-gray-600">Size:</span>
+                      <select
+                        v-model="item[9]"
+                        class="text-sm border-gray-300 rounded-md focus:ring-navy-500 focus:border-navy-500"
+                        @change="updateItemOptions(item)"
+                      >
+                        <option value="">Select Size</option>
+                        <option v-for="size in item[7]" :key="size" :value="size">
+                          {{ size }}
+                        </option>
+                      </select>
+                    </div>
+
+                    <!-- Kind Selection -->
+                    <div v-if="item[8]?.length" class="flex items-center gap-2">
+                      <span class="text-sm text-gray-600">Variant:</span>
+                      <select
+                        v-model="item[10]"
+                        class="text-sm border-gray-300 rounded-md focus:ring-navy-500 focus:border-navy-500"
+                        @change="updateItemOptions(item)"
+                      >
+                        <option value="">Select Variant</option>
+                        <option v-for="kind in item[8]" :key="kind" :value="kind">
+                          {{ kind }}
+                        </option>
+                      </select>
+                    </div>
                   </div>
 
                   <div class="flex items-center justify-between">
@@ -350,6 +388,22 @@ const getImageUrl = (imagePath) => {
 
   // Default case: prepend /storage/
   return `/storage/${cleanPath}`;
+};
+
+const updateItemOptions = (item) => {
+  router.post(
+    route("cart.updateOptions"),
+    {
+      product_id: item[0],
+      size: item[9],
+      kind: item[10]
+    },
+    {
+      preserveScroll: true,
+      preserveState: true,
+      progress: false,
+    }
+  );
 };
 </script>
 
